@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f0f7ff">
+<title>MedLembrete</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0f7ff; --white:#ffffff; --blue:#1a6fd4; --blue-dark:#1455a8;
+  --blue-light:#e8f1ff; --green:#18a464; --green-light:#e6f7ef;
+  --red:#d93025; --red-light:#fdecea; --yellow:#f59e0b; --yellow-light:#fffbeb;
+  --gray:#6b7280; --gray-light:#f3f4f6; --border:#d1dff5;
+  --text:#1a2540; --text2:#4a5568;
+  --radius:20px; --radius-lg:28px;
+  --shadow:0 4px 20px rgba(26,111,212,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);overscroll-behavior:none;font-size:17px;}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:540px;margin:0 auto;background:var(--bg);}
+
+/* HEADER */
+.app-header{background:var(--blue);color:white;padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 16px rgba(26,111,212,0.25);flex-shrink:0;z-index:50;}
+.hlogo{display:flex;align-items:center;gap:10px;}
+.hlogo .icon{font-size:2rem;}
+.hlogo h1{font-size:1.55rem;font-weight:900;letter-spacing:-0.5px;}
+#voice-btn{background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.45);color:white;border-radius:14px;padding:8px 14px;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s;display:flex;align-items:center;gap:6px;}
+#voice-btn.on{background:var(--green);border-color:var(--green);}
+#voice-btn:active{transform:scale(.95);}
+
+/* CLOCK */
+.clock-strip{background:var(--blue-dark);color:white;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.clock-strip .ctime{font-size:1.3rem;font-weight:900;letter-spacing:1px;}
+.clock-strip .cdate{font-size:0.85rem;font-weight:700;opacity:.85;}
+
+/* PAGES */
+.page{display:none;flex:1;overflow-y:auto;padding:18px 14px 108px;}
+.page.active{display:block;animation:pin .25s ease;}
+@keyframes pin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;background:var(--white);border-top:2px solid var(--border);display:flex;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08);}
+.nbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 4px 11px;background:none;border:none;cursor:pointer;color:var(--gray);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;gap:4px;letter-spacing:.3px;transition:color .15s;}
+.nbtn .ni{font-size:1.75rem;line-height:1;}
+.nbtn.active{color:var(--blue);}
+
+/* SECTION TITLE */
+.slabel{font-size:.78rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:12px;margin-top:4px;}
+
+/* ===== TODAY ===== */
+.today-hero{background:var(--white);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;}
+.date-box{background:var(--blue);color:white;border-radius:16px;padding:10px 16px;text-align:center;min-width:66px;}
+.date-box .dnum{font-size:2rem;font-weight:900;line-height:1;}
+.date-box .dmon{font-size:.78rem;font-weight:800;text-transform:uppercase;opacity:.9;}
+.hero-info{flex:1;}
+.hero-info h2{font-size:1.25rem;font-weight:900;}
+.hero-info p{color:var(--text2);font-size:.92rem;font-weight:700;margin-top:2px;}
+.pbar-wrap{background:var(--gray-light);border-radius:8px;height:10px;margin-top:8px;overflow:hidden;}
+.pbar{background:linear-gradient(90deg,var(--blue),var(--green));height:100%;border-radius:8px;transition:width .5s ease;}
+
+/* DOSE CARD */
+.dcard{background:var(--white);border-radius:var(--radius-lg);padding:18px;margin-bottom:12px;box-shadow:var(--shadow);border-left:7px solid var(--blue);position:relative;overflow:hidden;transition:opacity .3s;}
+.dcard.taken{border-left-color:var(--green);opacity:.65;}
+.dcard.overdue{border-left-color:var(--red);}
+.dcard.upcoming{border-left-color:var(--yellow);}
+.dcard.now{border-left-color:var(--blue);box-shadow:0 4px 24px rgba(26,111,212,.22);}
+.dtop{display:flex;align-items:flex-start;gap:12px;}
+.dicon{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;flex-shrink:0;background:var(--blue-light);}
+.dcard.taken .dicon{background:var(--green-light);}
+.dcard.overdue .dicon{background:var(--red-light);}
+.dcard.upcoming .dicon{background:var(--yellow-light);}
+.dinfo{flex:1;}
+.dname{font-size:1.25rem;font-weight:900;line-height:1.2;padding-right:70px;}
+.damount{font-size:.98rem;color:var(--text2);font-weight:700;margin-top:4px;}
+.dobs{font-size:.88rem;color:var(--gray);margin-top:2px;font-style:italic;}
+.dtime{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:10px;font-size:.98rem;font-weight:900;margin-top:8px;background:var(--blue-light);color:var(--blue);}
+.dcard.taken .dtime{background:var(--green-light);color:var(--green);}
+.dcard.overdue .dtime{background:var(--red-light);color:var(--red);}
+.dcard.upcoming .dtime{background:var(--yellow-light);color:var(--yellow);}
+.dstatus{position:absolute;top:14px;right:14px;font-size:.75rem;font-weight:900;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:.5px;}
+.dcard.taken .dstatus{background:var(--green-light);color:var(--green);}
+.dcard.overdue .dstatus{background:var(--red-light);color:var(--red);}
+.dcard.upcoming .dstatus{background:var(--yellow-light);color:var(--yellow);}
+.dcard.now .dstatus{background:var(--blue-light);color:var(--blue);}
+.dactions{display:flex;gap:9px;margin-top:13px;}
+.btn-take-info{flex:1;padding:14px;border-radius:14px;font-size:.97rem;font-weight:800;border:2px dashed var(--border);background:var(--gray-light);color:var(--gray);display:flex;align-items:center;justify-content:center;gap:8px;cursor:default;user-select:none;}
+.dcard.taken .btn-take-info{background:var(--green-light);color:var(--green);border:2px solid var(--green);}
+
+/* TAKEN TOGGLE */
+.taken-toggle{width:100%;padding:14px 18px;border-radius:16px;border:2px dashed var(--border);background:var(--white);color:var(--text2);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:all .2s;}
+.taken-toggle:active{background:var(--blue-light);}
+.taken-toggle .arrow{font-size:1.1rem;transition:transform .3s;}
+.taken-toggle.open .arrow{transform:rotate(180deg);}
+.taken-section{overflow:hidden;transition:all .3s ease;}
+.taken-section.hidden{display:none;}
+.btn-read{padding:15px 16px;border-radius:14px;font-size:1.2rem;border:2px solid var(--border);background:var(--white);cursor:pointer;transition:all .15s;color:var(--blue);}
+.btn-read:active{background:var(--blue-light);}
+
+.empty-box{text-align:center;padding:52px 20px;background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);}
+.empty-box .bige{font-size:4.5rem;margin-bottom:14px;}
+.empty-box h3{font-size:1.35rem;font-weight:900;margin-bottom:8px;}
+.empty-box p{color:var(--text2);font-size:.98rem;line-height:1.6;font-weight:600;}
+
+/* ===== FORM ===== */
+.fcard{background:var(--white);border-radius:var(--radius-lg);padding:22px 18px;box-shadow:var(--shadow);margin-bottom:16px;}
+.fcard h2{font-size:1.25rem;font-weight:900;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.field{margin-bottom:17px;}
+.field label{display:block;font-size:1rem;font-weight:900;color:var(--text);margin-bottom:8px;}
+.field input,.field select{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;padding:13px 15px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.field input:focus,.field select:focus{border-color:var(--blue);background:var(--white);}
+.upills{display:flex;flex-wrap:wrap;gap:9px;}
+.upill{padding:12px 16px;border-radius:12px;font-size:.98rem;font-weight:800;border:2px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;transition:all .15s;user-select:none;}
+.upill.active{background:var(--blue);color:white;border-color:var(--blue);box-shadow:0 3px 12px rgba(26,111,212,.25);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.phint{font-size:.9rem;color:var(--blue);font-weight:800;margin-top:5px;min-height:20px;}
+.btn-save{width:100%;padding:17px;border-radius:16px;font-size:1.18rem;font-weight:900;background:var(--blue);color:white;border:none;cursor:pointer;font-family:'Nunito',sans-serif;box-shadow:0 5px 20px rgba(26,111,212,.3);transition:transform .15s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-save:active{transform:scale(.98);}
+
+/* ===== MANAGE ===== */
+.mcard{background:var(--white);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;animation:pin .25s ease;}
+.micon{width:58px;height:58px;border-radius:16px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0;}
+.minfo{flex:1;min-width:0;}
+.mname{font-size:1.08rem;font-weight:900;}
+.mdetail{font-size:.88rem;color:var(--text2);font-weight:700;margin-top:3px;}
+.mbadge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;}
+.mbadge.active{background:var(--green-light);color:var(--green);}
+.mbadge.paused{background:var(--yellow-light);color:var(--yellow);}
+.mbadge.ended{background:var(--red-light);color:var(--red);}
+.mactions{display:flex;flex-direction:column;gap:7px;flex-shrink:0;}
+.bsm{padding:10px 13px;border-radius:11px;font-size:.92rem;font-weight:800;border:2px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;font-family:'Nunito',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.bsm.del:active{background:var(--red-light);border-color:var(--red);color:var(--red);}
+.bsm.pause:active{background:var(--yellow-light);border-color:var(--yellow);color:var(--yellow);}
+
+/* ===== CONFIG ===== */
+.cfgcard{background:var(--white);border-radius:var(--radius-lg);padding:20px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+.cfgcard h2{font-size:1.18rem;font-weight:900;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.cfgcard p{color:var(--text2);font-size:.93rem;line-height:1.65;margin-bottom:13px;font-weight:600;}
+.bcfg{width:100%;padding:15px;border-radius:14px;font-size:1.02rem;font-weight:900;border:none;cursor:pointer;font-family:'Nunito',sans-serif;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:9px;}
+.bcfg:active{transform:scale(.98);}
+.bcfg.blue{background:var(--blue);color:white;box-shadow:0 4px 16px rgba(26,111,212,.25);}
+.bcfg.green{background:var(--green);color:white;box-shadow:0 4px 16px rgba(24,164,100,.25);}
+.schip{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:12px;margin-top:11px;font-size:.93rem;font-weight:800;}
+.schip.ok{background:var(--green-light);color:var(--green);}
+.schip.warn{background:var(--yellow-light);color:var(--yellow);}
+.schip.err{background:var(--red-light);color:var(--red);}
+
+/* ===== ALARM OVERLAY ===== */
+.aoverlay{display:none;position:fixed;inset:0;z-index:999;background:rgba(240,247,255,.96);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+.aoverlay.show{display:flex;}
+.abox{background:var(--white);border-radius:32px;padding:34px 26px;text-align:center;width:100%;max-width:380px;box-shadow:0 12px 60px rgba(26,111,212,.3);border:3px solid var(--blue);animation:apop .4s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes apop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.apulse{font-size:5rem;animation:hbeat .65s infinite alternate;}
+@keyframes hbeat{from{transform:scale(1)}to{transform:scale(1.18)}}
+.atitle{font-size:1.75rem;font-weight:900;color:var(--blue);margin:10px 0 5px;}
+.aname{font-size:1.45rem;font-weight:900;margin-bottom:4px;}
+.adose{font-size:1.08rem;color:var(--text2);font-weight:700;margin-bottom:5px;}
+.aobs{font-size:.92rem;color:var(--gray);font-style:italic;margin-bottom:22px;}
+.abtns{display:flex;flex-direction:column;gap:11px;}
+.btn-ataken{padding:17px;border-radius:16px;font-size:1.18rem;font-weight:900;background:var(--green);color:white;border:none;cursor:pointer;font-family:'Nunito',sans-serif;box-shadow:0 5px 20px rgba(24,164,100,.35);transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:9px;}
+.btn-ataken:active{transform:scale(.97);}
+.btn-asnooze{padding:15px;border-radius:16px;font-size:1.08rem;font-weight:800;background:var(--yellow-light);color:var(--yellow);border:2px solid var(--yellow);cursor:pointer;font-family:'Nunito',sans-serif;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:9px;}
+.btn-asnooze:active{transform:scale(.97);}
+
+/* TOAST */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:white;padding:13px 22px;border-radius:14px;font-size:1rem;font-weight:800;opacity:0;z-index:200;transition:all .3s;white-space:nowrap;max-width:92vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-header">
+    <div class="hlogo">
+      <span class="icon">💊</span>
+      <h1>MedLembrete</h1>
+    </div>
+    <button id="voice-btn" onclick="toggleVoice()">🔇 Voz</button>
+  </div>
+  <div class="clock-strip">
+    <div class="ctime" id="ctime">00:00</div>
+    <div class="cdate" id="cdate">—</div>
+  </div>
+
+  <!-- HOJE -->
+  <div class="page active" id="page-hoje">
+    <div class="today-hero">
+      <div class="date-box">
+        <div class="dnum" id="tday">—</div>
+        <div class="dmon" id="tmon">—</div>
+      </div>
+      <div class="hero-info">
+        <h2 id="tgreet">Olá! 👋</h2>
+        <p id="tsum">Carregando...</p>
+        <div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <p class="slabel">📅 Agendamentos de Hoje</p>
+    <div id="today-list"></div>
+  </div>
+
+  <!-- CADASTRAR -->
+  <div class="page" id="page-cadastrar">
+    <div class="fcard">
+      <h2>💊 Novo Remédio</h2>
+      <div class="field">
+        <label>Nome do Remédio</label>
+        <input type="text" id="fn" placeholder="Ex: Omeprazol 20mg" maxlength="60">
+      </div>
+      <div class="field">
+        <label>Quantidade da Dose</label>
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+          <input type="number" id="fq" value="1" min="0.5" step="0.5" style="max-width:85px">
+          <div class="upills" id="upills">
+            <div class="upill active" data-unit="comprimido(s)" onclick="selU(this)">💊 Comp.</div>
+            <div class="upill" data-unit="cápsula(s)" onclick="selU(this)">🔵 Cáps.</div>
+            <div class="upill" data-unit="ml" onclick="selU(this)">💧 ml</div>
+            <div class="upill" data-unit="gotas" onclick="selU(this)">🩸 Gotas</div>
+            <div class="upill" data-unit="outro" onclick="selU(this)">📦 Outro</div>
+          </div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Horário da 1ª Dose</label>
+          <input type="time" id="ft">
+        </div>
+        <div class="field">
+          <label>Repetir a cada</label>
+          <div style="display:flex;gap:7px">
+            <input type="number" id="fi" value="8" min="1" max="72" style="max-width:72px" oninput="updH()">
+            <select id="fiu" onchange="updH()">
+              <option value="h">horas</option>
+              <option value="d">dias</option>
+            </select>
+          </div>
+          <div class="phint" id="phint">A cada 8 horas</div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Duração</label>
+          <div style="display:flex;gap:7px">
+            <input type="number" id="fd" value="7" min="1" style="max-width:72px">
+            <select id="fdu">
+              <option value="d">dias</option>
+              <option value="s">semanas</option>
+              <option value="m">meses</option>
+              <option value="i">Contínuo</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Observação</label>
+          <input type="text" id="fo" placeholder="Ex: em jejum" maxlength="50">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveMed()">✅ Salvar e Ativar Alarme</button>
+    </div>
+  </div>
+
+  <!-- REMÉDIOS -->
+  <div class="page" id="page-remedios">
+    <p class="slabel">💊 Remédios Cadastrados</p>
+    <div id="mlist"></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="page" id="page-config">
+    <div class="cfgcard">
+      <h2>🔔 Notificações</h2>
+      <p>Ative para receber alertas mesmo com o app em segundo plano.</p>
+      <button class="bcfg blue" onclick="reqNotif()">🔔 Ativar Notificações</button>
+      <div id="nstatus" class="schip warn">⚠️ Verificando...</div>
+    </div>
+    <div class="cfgcard">
+      <h2>🔊 Leitura por Voz</h2>
+      <p>O app lê em voz alta o nome e a dose do remédio no momento do alarme.</p>
+      <button class="bcfg green" onclick="toggleVoice()" id="vcfgbtn">🔇 Voz Desativada</button>
+    </div>
+    <div class="cfgcard">
+      <h2>📱 Instalar como App</h2>
+      <p>No Chrome/Android: toque em <strong>⋮ → Adicionar à tela inicial</strong> para usar como app real com acesso a alarmes do sistema.</p>
+      <button class="bcfg blue" onclick="tryInstall()">📲 Instalar App</button>
+    </div>
+    <div class="cfgcard">
+      <h2>ℹ️ Sobre</h2>
+      <p>MedLembrete v2.0 — Alarme sonoro, vibração e leitura por voz para nunca esquecer seus remédios.</p>
+    </div>
+  </div>
+
+  <nav class="bnav">
+    <button class="nbtn active" id="nb-hoje" onclick="goPage('hoje')"><span class="ni">🏠</span>Hoje</button>
+    <button class="nbtn" id="nb-cadastrar" onclick="goPage('cadastrar')"><span class="ni">➕</span>Cadastrar</button>
+    <button class="nbtn" id="nb-remedios" onclick="goPage('remedios')"><span class="ni">💊</span>Remédios</button>
+    <button class="nbtn" id="nb-config" onclick="goPage('config')"><span class="ni">⚙️</span>Config</button>
+  </nav>
+</div>
+
+<!-- ALARM -->
+<div class="aoverlay" id="aoverlay">
+  <div class="abox">
+    <div class="apulse">⏰</div>
+    <div class="atitle">Hora do Remédio!</div>
+    <div class="aname" id="aln">—</div>
+    <div class="adose" id="ald">—</div>
+    <div class="aobs" id="alo"></div>
+    <div class="abtns">
+      <button class="btn-ataken" onclick="dismissAlarm()">✅ Tomei o remédio!</button>
+      <button class="btn-asnooze" onclick="snoozeAlarm()">😴 Lembrar em 10 minutos</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var meds = JSON.parse(localStorage.getItem('mlv5')||'[]');
+var selUnit = 'comprimido(s)';
+var voiceOn = localStorage.getItem('voice')==='1';
+var showTaken = false;
+var curAlarm = null;
+var audioCtx = null;
+var vibInt = null;
+var snoozeTimers = {};
+var deferredPWA = null;
+var EMOJIS = ['💊','🔵','🟡','🔴','🟠','🟣','💉','🌿','🫀','🫁'];
+var MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var DAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPWA=e;});
+
+// ---- NAV ----
+function goPage(n){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nbtn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('page-'+n).classList.add('active');
+  document.getElementById('nb-'+n).classList.add('active');
+  if(n==='hoje') renderToday();
+  if(n==='remedios') renderManage();
+  if(n==='config') updCfg();
+}
+
+// ---- CLOCK ----
+function tickClock(){
+  var now = new Date();
+  document.getElementById('ctime').textContent = now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('cdate').textContent = DAYS[now.getDay()]+', '+now.getDate()+' de '+MONTHS[now.getMonth()];
+  document.getElementById('tday').textContent = now.getDate();
+  document.getElementById('tmon').textContent = MONTHS[now.getMonth()];
+  var h = now.getHours();
+  document.getElementById('tgreet').textContent = h<12?'Bom dia! ☀️':h<18?'Boa tarde! 🌤️':'Boa noite! 🌙';
+}
+
+// ---- TODAY ----
+function getTodayDoses(){
+  var now = new Date();
+  var todayStart = new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  var todayEnd = todayStart+86400000;
+  var doses = [];
+  meds.forEach(function(med,idx){
+    if(!med.active) return;
+    if(med.durMs!==-1 && (Date.now()-med.start)>med.durMs) return;
+    var t = med.firstAlarm;
+    while(t < todayStart) t += med.intMs;
+    while(t < todayEnd){
+      var taken = (med.takenTimes||[]).some(function(tt){return Math.abs(tt-t)<med.intMs*0.45;});
+      doses.push({med:med,idx:idx,at:t,taken:taken,emoji:EMOJIS[idx%EMOJIS.length]});
+      t += med.intMs;
+    }
+  });
+  doses.sort(function(a,b){return a.at-b.at;});
+  return doses;
+}
+
+function buildDoseCard(d, now){
+  var t = new Date(d.at);
+  var ts = t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var cls = 'dcard', sl = '', sltxt = '';
+  if(d.taken){cls+=' taken'; sl='taken'; sltxt='✅ Tomado';}
+  else if(d.at < now-300000){cls+=' overdue'; sl='overdue'; sltxt='⚠️ Atrasado';}
+  else if(d.at > now+1800000){cls+=' upcoming'; sl='upcoming'; sltxt='🕐 Próximo';}
+  else{cls+=' now'; sl='now'; sltxt='⏰ Agora!';}
+  var speakText = d.med.name+', '+d.med.qty+' '+d.med.unit+(d.med.obs?', '+d.med.obs:'');
+  return '<div class="'+cls+'">'
+    +(sl?'<div class="dstatus">'+sltxt+'</div>':'')
+    +'<div class="dtop">'
+      +'<div class="dicon">'+d.emoji+'</div>'
+      +'<div class="dinfo">'
+        +'<div class="dname">'+d.med.name+'</div>'
+        +'<div class="damount">'+d.med.qty+' '+d.med.unit+'</div>'
+        +(d.med.obs?'<div class="dobs">'+d.med.obs+'</div>':'')
+        +'<div class="dtime">🕐 '+ts+'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="dactions">'
+      +'<div class="btn-take-info">'
+        +(d.taken?'✅ Tomado pelo alarme':'⏰ Confirme pelo alarme')
+      +'</div>'
+      +'<button class="btn-read" title="Ler em voz alta" onclick="speak(\''+escS(speakText)+'\')">🔊</button>'
+    +'</div>'
+  +'</div>';
+}
+
+function renderToday(){
+  var doses = getTodayDoses();
+  var now = Date.now();
+  var total = doses.length;
+  var takenDoses = doses.filter(function(d){return d.taken;});
+  var pendingDoses = doses.filter(function(d){return !d.taken;});
+  var takenCount = takenDoses.length;
+
+  document.getElementById('tsum').textContent = total===0?'Sem remédios hoje':takenCount+' de '+total+' tomado(s)';
+  var pct = total?Math.round(takenCount/total*100):0;
+  document.getElementById('pbar').style.width = pct+'%';
+
+  if(!doses.length){
+    document.getElementById('today-list').innerHTML = '<div class="empty-box"><div class="bige">🎉</div><h3>Nenhum remédio hoje!</h3><p>Vá em <strong>Cadastrar</strong> para adicionar seus medicamentos.</p></div>';
+    return;
+  }
+
+  var html = '';
+
+  // Pending doses
+  if(pendingDoses.length){
+    html += pendingDoses.map(function(d){return buildDoseCard(d,now);}).join('');
+  } else {
+    html += '<div class="empty-box" style="padding:30px 20px;margin-bottom:12px"><div class="bige" style="font-size:3rem">🎉</div><h3 style="font-size:1.1rem">Tudo em dia!</h3><p>Todos os remédios de hoje foram tomados.</p></div>';
+  }
+
+  // Taken section toggle
+  if(takenCount > 0){
+    var toggleClass = 'taken-toggle' + (showTaken?' open':'');
+    html += '<button class="'+toggleClass+'" onclick="toggleTaken()">'
+      +'<span>✅ Tomados hoje ('+takenCount+')</span>'
+      +'<span class="arrow">▼</span>'
+    +'</button>';
+    html += '<div class="taken-section'+(showTaken?'':' hidden')+'" id="taken-section">';
+    html += takenDoses.map(function(d){return buildDoseCard(d,now);}).join('');
+    html += '</div>';
+  }
+
+  document.getElementById('today-list').innerHTML = html;
+}
+
+function toggleTaken(){
+  showTaken = !showTaken;
+  renderToday();
+  // Scroll to taken section if opening
+  if(showTaken){
+    setTimeout(function(){
+      var el = document.getElementById('taken-section');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 50);
+  }
+}
+
+function escS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+// ---- FORM ----
+function selU(el){
+  document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active'); selUnit = el.dataset.unit;
+}
+function updH(){
+  var v=parseInt(document.getElementById('fi').value)||8;
+  var u=document.getElementById('fiu').value;
+  var lbl=u==='h'?(v===1?'hora':'horas'):(v===1?'dia':'dias');
+  document.getElementById('phint').textContent='A cada '+v+' '+lbl;
+}
+function getIntMs(){
+  var v=parseInt(document.getElementById('fi').value)||8;
+  var u=document.getElementById('fiu').value;
+  return u==='h'?v*3600000:v*86400000;
+}
+function getDurMs(){
+  var v=parseInt(document.getElementById('fd').value)||7;
+  var u=document.getElementById('fdu').value;
+  if(u==='i') return -1;
+  if(u==='s') return v*7*86400000;
+  if(u==='m') return v*30*86400000;
+  return v*86400000;
+}
+function saveMed(){
+  var name=document.getElementById('fn').value.trim();
+  var qty=parseFloat(document.getElementById('fq').value)||1;
+  var tv=document.getElementById('ft').value;
+  var obs=document.getElementById('fo').value.trim();
+  if(!name){hl('fn');return;}
+  if(!tv){hl('ft');return;}
+  var parts=tv.split(':').map(Number);
+  var first=new Date(); first.setHours(parts[0],parts[1],0,0);
+  if(first.getTime()<=Date.now()) first.setDate(first.getDate()+1);
+  meds.push({id:Date.now(),name:name,qty:qty,unit:selUnit,obs:obs,intMs:getIntMs(),durMs:getDurMs(),start:Date.now(),firstAlarm:first.getTime(),takenTimes:[],active:true});
+  saveMeds(); resetForm();
+  showToast('💊 '+name+' cadastrado!');
+  if(voiceOn) speak('Remédio '+name+' cadastrado com sucesso.');
+  goPage('hoje');
+}
+function hl(id){
+  var el=document.getElementById(id);
+  el.style.borderColor='var(--red)';el.style.background='var(--red-light)';el.focus();
+  setTimeout(function(){el.style.borderColor='';el.style.background='';},1800);
+}
+function resetForm(){
+  ['fn','fo'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fq').value=1;
+  document.getElementById('fi').value=8;
+  document.getElementById('fiu').value='h';
+  document.getElementById('fd').value=7;
+  document.getElementById('fdu').value='d';
+  var d=new Date(Date.now()+3600000);
+  document.getElementById('ft').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
+  document.querySelector('.upill[data-unit="comprimido(s)"]').classList.add('active');
+  selUnit='comprimido(s)'; updH();
+}
+
+// ---- MANAGE ----
+function renderManage(){
+  var c=document.getElementById('mlist');
+  if(!meds.length){
+    c.innerHTML='<div class="empty-box"><div class="bige">💊</div><h3>Nenhum remédio</h3><p>Cadastre seu primeiro remédio!</p></div>';
+    return;
+  }
+  var now=Date.now();
+  c.innerHTML=meds.map(function(med,i){
+    var exp=med.durMs!==-1&&(now-med.start)>med.durMs;
+    var st=exp?'ended':med.active?'active':'paused';
+    var stl=exp?'✗ Encerrado':med.active?'✓ Ativo':'⏸ Pausado';
+    var dur=med.durMs===-1?'Uso contínuo':Math.ceil(med.durMs/86400000)+' dias';
+    return '<div class="mcard">'
+      +'<div class="micon">'+EMOJIS[i%EMOJIS.length]+'</div>'
+      +'<div class="minfo">'
+        +'<div class="mname">'+med.name+'</div>'
+        +'<div class="mdetail">'+med.qty+' '+med.unit+(med.obs?' · '+med.obs:'')+'</div>'
+        +'<div class="mdetail">'+dur+' · '+(med.takenTimes||[]).length+' dose(s)</div>'
+        +'<span class="mbadge '+st+'">'+stl+'</span>'
+      +'</div>'
+      +'<div class="mactions">'
+        +'<button class="bsm pause" onclick="togMed('+med.id+')">'+(med.active?'⏸ Pausar':'▶️ Retomar')+'</button>'
+        +'<button class="bsm del" onclick="delMed('+med.id+')">🗑️ Remover</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+function togMed(id){
+  var med=meds.find(function(m){return m.id===id;});
+  if(!med) return;
+  med.active=!med.active; saveMeds(); renderManage();
+  showToast(med.active?'▶️ Retomado':'⏸ Pausado');
+}
+function delMed(id){
+  if(!confirm('Remover este remédio?')) return;
+  meds=meds.filter(function(m){return m.id!==id;}); saveMeds(); renderManage();
+  showToast('🗑️ Remédio removido.');
+}
+
+// ---- ALARM ----
+function checkAlarms(){
+  if(document.getElementById('aoverlay').classList.contains('show')) return;
+  var now=Date.now();
+  for(var i=0;i<meds.length;i++){
+    var med=meds[i];
+    if(!med.active) continue;
+    if(med.durMs!==-1&&(now-med.start)>med.durMs) continue;
+    var snoozeUntil=snoozeTimers[med.id]||0;
+    var t=med.firstAlarm;
+    while(t<now-30000) t+=med.intMs;
+    if(snoozeUntil>0){
+      if(now>=snoozeUntil&&now<snoozeUntil+60000){
+        var already=(med.takenTimes||[]).some(function(tt){return Math.abs(tt-t)<med.intMs*0.45;});
+        if(!already){triggerAlarm(med,t);break;}
+      }
+      continue;
+    }
+    if(now>=t&&now<t+60000){
+      var alr=(med.takenTimes||[]).some(function(tt){return Math.abs(tt-t)<med.intMs*0.45;});
+      if(!alr){triggerAlarm(med,t);break;}
+    }
+  }
+}
+function triggerAlarm(med,at){
+  curAlarm={med:med,at:at};
+  document.getElementById('aln').textContent=med.name;
+  document.getElementById('ald').textContent=med.qty+' '+med.unit;
+  document.getElementById('alo').textContent=med.obs||'';
+  document.getElementById('aoverlay').classList.add('show');
+  playSound(); sendNotif(med);
+  if(voiceOn) setTimeout(function(){speak('Atenção! Hora de tomar '+med.name+'. Dose: '+med.qty+' '+med.unit+(med.obs?'. '+med.obs:'')+'.');},600);
+}
+function dismissAlarm(){
+  stopSound(); document.getElementById('aoverlay').classList.remove('show');
+  if(curAlarm){
+    var med=curAlarm.med, at=curAlarm.at;
+    if(!med.takenTimes) med.takenTimes=[];
+    med.takenTimes.push(at); saveMeds();
+    if(document.getElementById('page-hoje').classList.contains('active')) renderToday();
+    showToast('✅ '+med.name+' tomado!');
+    if(voiceOn) speak('Ótimo! '+med.name+' registrado.');
+  }
+  curAlarm=null;
+}
+function snoozeAlarm(){
+  stopSound(); document.getElementById('aoverlay').classList.remove('show');
+  if(curAlarm){
+    snoozeTimers[curAlarm.med.id]=Date.now()+600000;
+    showToast('😴 Lembrete em 10 minutos');
+  }
+  curAlarm=null;
+}
+
+// ---- SOUND ----
+function playSound(){
+  stopSound();
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    audioCtx=ctx;
+    function beep(t){
+      var notes=[880,1100,880,1100,660,880,1320,880];
+      notes.forEach(function(f,i){
+        var o=ctx.createOscillator(), g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type=i%2===0?'square':'sawtooth';
+        o.frequency.setValueAtTime(f,t+i*0.2);
+        g.gain.setValueAtTime(0.5,t+i*0.2);
+        g.gain.exponentialRampToValueAtTime(0.001,t+i*0.2+0.16);
+        o.start(t+i*0.2); o.stop(t+i*0.2+0.18);
+      });
+    }
+    beep(ctx.currentTime);
+    audioCtx._loop=setInterval(function(){if(audioCtx)beep(audioCtx.currentTime);},2500);
+  }catch(e){}
+  if(navigator.vibrate){
+    navigator.vibrate([500,200,500,200,1000,500]);
+    vibInt=setInterval(function(){navigator.vibrate([500,200,500,200,1000,500]);},3500);
+  }
+}
+function stopSound(){
+  if(audioCtx){clearInterval(audioCtx._loop);try{audioCtx.close();}catch(e){}audioCtx=null;}
+  if(vibInt){clearInterval(vibInt);vibInt=null;}
+  if(navigator.vibrate) navigator.vibrate(0);
+}
+
+// ---- NOTIFICATIONS ----
+async function reqNotif(){
+  if(!('Notification' in window)){showToast('⚠️ Navegador não suporta notificações');return;}
+  var p=await Notification.requestPermission();
+  updCfg();
+  if(p==='granted'){new Notification('MedLembrete 💊',{body:'Notificações ativadas!'});showToast('✅ Notificações ativadas!');}
+  else showToast('❌ Permissão negada. Verifique as configurações do navegador.');
+}
+function sendNotif(med){
+  if(Notification.permission==='granted'){
+    try{new Notification('💊 '+med.name,{body:'Tomar '+med.qty+' '+med.unit+(med.obs?' · '+med.obs:''),requireInteraction:true,silent:false});}catch(e){}
+  }
+}
+function updCfg(){
+  var el=document.getElementById('nstatus');
+  if(!('Notification' in window)){el.className='schip err';el.textContent='✗ Não suportado neste navegador';}
+  else if(Notification.permission==='granted'){el.className='schip ok';el.textContent='✓ Notificações ativadas!';}
+  else if(Notification.permission==='denied'){el.className='schip err';el.textContent='✗ Bloqueadas — verifique as configurações';}
+  else{el.className='schip warn';el.textContent='⚠️ Clique em Ativar Notificações';}
+}
+
+// ---- VOICE ----
+function speak(text){
+  if(!voiceOn||!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(text);
+  u.lang='pt-BR'; u.rate=0.88; u.pitch=1; u.volume=1;
+  var voices=window.speechSynthesis.getVoices();
+  var ptv=voices.find(function(v){return v.lang.startsWith('pt');});
+  if(ptv) u.voice=ptv;
+  window.speechSynthesis.speak(u);
+}
+function toggleVoice(){
+  voiceOn=!voiceOn; localStorage.setItem('voice',voiceOn?'1':'0');
+  updVoiceUI();
+  if(voiceOn) speak('Leitura por voz ativada!');
+  else showToast('🔇 Voz desativada');
+}
+function updVoiceUI(){
+  var hb=document.getElementById('voice-btn'), cb=document.getElementById('vcfgbtn');
+  if(voiceOn){hb.textContent='🔊 Voz ON';hb.classList.add('on');cb.textContent='🔊 Voz Ativada';}
+  else{hb.textContent='🔇 Voz';hb.classList.remove('on');cb.textContent='🔇 Voz Desativada';}
+}
+
+// ---- PWA ----
+function tryInstall(){
+  if(deferredPWA){deferredPWA.prompt();deferredPWA.userChoice.then(function(){deferredPWA=null;});}
+  else showToast('Abra no Chrome → menu ⋮ → Adicionar à tela inicial');
+}
+
+// ---- PERSIST ----
+function saveMeds(){localStorage.setItem('mlv5',JSON.stringify(meds));}
+
+// ---- TOAST ----
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2800);
+}
+
+// ---- INIT ----
+(function(){
+  var d=new Date(Date.now()+3600000);
+  document.getElementById('ft').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  updH(); updVoiceUI(); updCfg(); tickClock(); renderToday();
+  setInterval(tickClock,1000);
+  setInterval(function(){checkAlarms();if(document.getElementById('page-hoje').classList.contains('active'))renderToday();},10000);
+  if('speechSynthesis' in window){
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener('voiceschanged',function(){});
+  }
+})();
+</script>
+</body>
+</html>
